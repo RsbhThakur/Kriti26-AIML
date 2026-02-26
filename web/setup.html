@@ -564,7 +564,7 @@
     <div class="loading-overlay" id="loading">
         <div class="loading-logo">BDH</div>
         <div class="loading-title">Computing Neural Trajectory</div>
-        <div class="loading-sub">PyTorch GPU inference running...</div>
+        <div class="loading-sub">Loading pre-computed visualization...</div>
         <div class="loading-steps">
             <div class="loading-step" id="lstep-0">
                 <span class="step-dot"></span> Encoding grid topology
@@ -729,33 +729,15 @@
             loadingEl.style.display = 'flex';
             animateLoadingSteps();
 
-            fetch('/api/run', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    start: [startPos.r, startPos.c],
-                    end: [endPos.r, endPos.c],
-                    neurons: parseInt(modelNeuronsEl.value, 10)
-                })
-            })
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.status === 'success') {
-                    loadingBar.style.width = '100%';
-                    setTimeout(function() {
-                        window.location.href = 'index.html';
-                    }, 400);
-                } else {
-                    alert('Error running engine: ' + data.message);
-                    loadingEl.style.display = 'none';
-                    loadingBar.style.width = '0%';
-                }
-            })
-            .catch(function() {
-                alert('Connection error. Is the Python server running?');
-                loadingEl.style.display = 'none';
-                loadingBar.style.width = '0%';
-            });
+            // Static mode: no backend needed, data is pre-generated
+            // Animate steps then redirect to visualization
+            setTimeout(function() {
+                loadingBar.style.width = '100%';
+                document.getElementById('lstep-3').className = 'loading-step done';
+                setTimeout(function() {
+                    window.location.href = 'index.html';
+                }, 400);
+            }, 3200);
         });
     </script>
 </body>
