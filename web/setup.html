@@ -4,46 +4,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BDH — Setup Simulation</title>
+    <title>BDH Engine Setup</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
-        body {
-            overflow-y: auto !important;
-        }
+        body { overflow-y: auto !important; background: var(--bg-0); }
 
-        .setup-container {
+        .setup-page {
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 2rem;
-            text-align: center;
+            padding: 2rem 1.5rem;
         }
 
         .setup-header {
-            margin-bottom: 2rem;
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .setup-badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.12);
+            border: 1px solid rgba(99, 102, 241, 0.35);
+            color: var(--accent-primary);
+            font-size: 0.68rem;
+            font-family: 'IBM Plex Mono', monospace;
+            letter-spacing: 0.12em;
+            padding: 0.25rem 0.85rem;
+            border-radius: 99px;
+            margin-bottom: 0.85rem;
         }
 
         .setup-header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
+            font-size: 2.4rem;
+            font-weight: 700;
             color: var(--text-primary);
+            margin-bottom: 0.5rem;
         }
 
         .setup-header p {
             color: var(--text-secondary);
-            font-size: 1.1rem;
-            max-width: 600px;
+            font-size: 0.98rem;
+            max-width: 540px;
+            margin: 0 auto;
+            line-height: 1.65;
+        }
+
+        .setup-body {
+            display: grid;
+            grid-template-columns: auto 390px;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1120px;
+            align-items: start;
+        }
+
+        .grid-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .placement-mode {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .mode-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1.3rem;
+            background: var(--bg-1);
+            border: 1px solid var(--surface-border);
+            color: var(--text-secondary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 500;
+            transition: all 0.18s;
+        }
+
+        .mode-btn:hover { border-color: rgba(255,255,255,0.2); color: var(--text-primary); }
+
+        .mode-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .mode-dot.start { background: var(--clr-start); box-shadow: 0 0 6px var(--clr-start); }
+        .mode-dot.end   { background: var(--clr-end);   box-shadow: 0 0 6px var(--clr-end); }
+
+        .mode-btn.active.start {
+            background: rgba(46, 168, 98, 0.12);
+            border-color: var(--clr-start);
+            color: var(--clr-start);
+        }
+
+        .mode-btn.active.end {
+            background: rgba(201, 68, 68, 0.12);
+            border-color: var(--clr-end);
+            color: var(--clr-end);
         }
 
         .grid-container {
             background: var(--bg-1);
-            padding: 1.5rem;
+            padding: 1.25rem;
             border-radius: var(--radius-lg);
             border: 1px solid var(--surface-border);
             box-shadow: var(--surface-elevation);
-            margin-bottom: 2rem;
+        }
+
+        .grid-label-row {
+            display: flex;
+            margin-bottom: 2px;
+            padding-left: 22px;
+        }
+
+        .grid-label-row span {
+            width: 28px;
+            text-align: center;
+            font-size: 8px;
+            color: var(--text-muted);
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .grid-with-labels { display: flex; gap: 2px; }
+
+        .row-labels { display: flex; flex-direction: column; margin-right: 2px; }
+        .row-labels span {
+            height: 28px;
+            display: flex;
+            align-items: center;
+            font-size: 8px;
+            color: var(--text-muted);
+            font-family: 'IBM Plex Mono', monospace;
+            width: 18px;
+            justify-content: flex-end;
+            padding-right: 2px;
         }
 
         .interactive-grid {
@@ -64,357 +165,598 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
-            font-weight: bold;
+            font-size: 11px;
+            font-weight: 700;
             color: white;
             user-select: none;
         }
 
-        .cell:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
+        .cell:hover { background: rgba(255, 255, 255, 0.08); }
+        .cell.start { background: var(--clr-start); }
+        .cell.end   { background: var(--clr-end); }
 
-        .cell.start {
-            background: var(--clr-start);
-        }
-
-        .cell.end {
-            background: var(--clr-end);
-        }
-
-        .status-panel {
+        .config-panel {
             display: flex;
-            gap: 2rem;
-            margin-bottom: 2rem;
-            padding: 1rem 2rem;
-            background: var(--bg-1);
-            border-radius: var(--radius-md);
-            border: 1px solid var(--surface-border);
+            flex-direction: column;
+            gap: 1.1rem;
         }
 
-        .model-size {
+        .config-card {
+            background: var(--bg-1);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-lg);
+            padding: 1.2rem;
+        }
+
+        .config-card h3 {
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 0.9rem;
+        }
+
+        .coord-chips { display: flex; flex-direction: column; gap: 0.55rem; }
+
+        .coord-chip {
             display: flex;
             align-items: center;
             gap: 0.6rem;
-            margin-bottom: 1.2rem;
-            padding: 0.8rem 1rem;
-            border-radius: var(--radius-md);
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius-sm);
             border: 1px solid var(--surface-border);
-            background: var(--bg-1);
-            color: var(--text-secondary);
+            background: var(--bg-0);
             font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.83rem;
+            transition: all 0.2s;
         }
 
-        .model-size label {
-            font-size: 0.85rem;
-            color: var(--text-primary);
+        .coord-chip .c-label { color: var(--text-secondary); font-size: 0.73rem; width: 34px; }
+        .coord-chip .c-value { color: var(--text-primary); font-weight: 600; flex: 1; }
+        .coord-chip.set-start { border-color: rgba(46, 168, 98, 0.45); background: rgba(46, 168, 98, 0.07); }
+        .coord-chip.set-end   { border-color: rgba(201, 68, 68, 0.45); background: rgba(201, 68, 68, 0.07); }
+
+        .dist-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-top: 0.6rem;
+            border-top: 1px solid var(--surface-border);
+            margin-top: 0.5rem;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.77rem;
+            color: var(--text-secondary);
         }
 
-        .model-size select {
+        .dist-row strong { color: var(--accent-primary); }
+
+        .hyperparam-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+
+        .hp-item {
+            background: var(--bg-0);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem 0.7rem;
+        }
+
+        .hp-item .hp-lbl { font-size: 0.67rem; color: var(--text-muted); font-family: 'IBM Plex Mono', monospace; }
+        .hp-item .hp-val {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            font-family: 'IBM Plex Mono', monospace;
+            margin-top: 0.15rem;
+        }
+
+        .model-size-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--surface-border);
+        }
+
+        .model-size-row label { font-size: 0.78rem; color: var(--text-secondary); flex-shrink: 0; }
+        .model-size-row select {
+            flex: 1;
             background: var(--bg-2);
             color: var(--text-primary);
             border: 1px solid var(--surface-border);
             border-radius: var(--radius-sm);
-            padding: 0.35rem 0.6rem;
+            padding: 0.33rem 0.55rem;
+            font-size: 0.8rem;
             cursor: pointer;
         }
 
-        .status-item {
+        .feature-list { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+
+        .feat-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.42rem;
+            font-size: 0.76rem;
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        .feat-icon { color: var(--accent-primary); flex-shrink: 0; margin-top: 1px; }
+
+        .view-existing {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-family: 'IBM Plex Mono', monospace;
-        }
-
-        .status-item span {
+            justify-content: center;
+            gap: 0.45rem;
+            padding: 0.55rem 1rem;
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-sm);
             color: var(--text-secondary);
+            font-size: 0.82rem;
+            text-decoration: none;
+            transition: all 0.18s;
         }
 
-        .status-item strong {
-            color: var(--text-primary);
-            font-size: 1.2rem;
+        .view-existing:hover {
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.06);
         }
 
         .btn-run {
-            padding: 1rem 3rem;
-            font-size: 1.2rem;
-            font-weight: 600;
+            width: 100%;
+            padding: 0.9rem 2rem;
+            font-size: 1rem;
+            font-weight: 700;
             background: var(--accent-primary);
             color: white;
             border: none;
             border-radius: var(--radius-sm);
             cursor: pointer;
             transition: all 0.2s ease;
+            letter-spacing: 0.03em;
         }
 
         .btn-run:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(79, 142, 252, 0.3);
+            box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35);
         }
 
         .btn-run:disabled {
             background: var(--bg-2);
             color: var(--text-muted);
             cursor: not-allowed;
-            opacity: 0.7;
+            opacity: 0.65;
         }
 
         .loading-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(4, 6, 14, 0.8);
-            backdrop-filter: blur(8px);
-            display: flex;
+            inset: 0;
+            background: rgba(9, 9, 11, 0.88);
+            backdrop-filter: blur(12px);
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 1000;
-            display: none;
         }
 
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(79, 142, 252, 0.2);
-            border-radius: 50%;
-            border-top-color: var(--accent-primary);
-            animation: spin 1s infinite linear;
-            margin-bottom: 1.5rem;
+        .loading-logo {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-primary);
+            margin-bottom: 0.4rem;
+            letter-spacing: -0.02em;
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+        .loading-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.35rem;
         }
 
-        .loading-overlay h2 {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .loading-overlay p {
+        .loading-sub {
             color: var(--text-secondary);
+            font-size: 0.82rem;
             font-family: 'IBM Plex Mono', monospace;
+            margin-bottom: 2rem;
         }
 
-        .placement-mode {
+        .loading-steps { display: flex; flex-direction: column; gap: 0.6rem; width: 300px; }
+
+        .loading-step {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            align-items: center;
+            gap: 0.7rem;
+            font-size: 0.8rem;
+            font-family: 'IBM Plex Mono', monospace;
+            color: var(--text-muted);
+            transition: color 0.3s;
         }
 
-        .mode-btn {
-            padding: 0.5rem 1.5rem;
+        .loading-step.active { color: var(--text-primary); }
+        .loading-step.done   { color: var(--clr-start); }
+
+        .step-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
             background: var(--bg-2);
             border: 1px solid var(--surface-border);
-            color: var(--text-secondary);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all 0.2s;
+            flex-shrink: 0;
+            transition: all 0.3s;
         }
 
-        .mode-btn.active.start {
-            background: rgba(46, 168, 98, 0.15);
+        .loading-step.active .step-dot {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 8px var(--accent-primary);
+            animation: pdot 1s infinite;
+        }
+
+        .loading-step.done .step-dot {
+            background: var(--clr-start);
             border-color: var(--clr-start);
-            color: var(--clr-start);
         }
 
-        .mode-btn.active.end {
-            background: rgba(201, 68, 68, 0.15);
-            border-color: var(--clr-end);
-            color: var(--clr-end);
+        @keyframes pdot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+
+        .loading-progress {
+            width: 300px;
+            height: 3px;
+            background: var(--bg-2);
+            border-radius: 2px;
+            margin-top: 1.5rem;
+            overflow: hidden;
+        }
+
+        .loading-bar {
+            height: 100%;
+            background: var(--accent-primary);
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.8s ease;
+        }
+
+        @media (max-width: 900px) {
+            .setup-body { grid-template-columns: 1fr; }
+            .grid-side { width: 100%; }
         }
     </style>
 </head>
 
 <body data-intensity="low">
 
-    <div class="setup-container">
+    <div class="setup-page">
         <div class="setup-header">
-            <h1>BDH Engine Setup</h1>
-            <p>Select the exact Start and End coordinates on the 16x16 grid below. The neural network will dynamically
-                compute the shortest path taking obstacles into account.</p>
+            <div class="setup-badge">BDH NEURAL ENGINE v2.0</div>
+            <h1>Configure Simulation</h1>
+            <p>Place start and end markers on the 16x16 grid. BDH computes the optimal path using
+                sparse Hebbian activations and dual-stream memory with O(T) inference.</p>
         </div>
 
-        <div class="placement-mode">
-            <button class="mode-btn active start" id="mode-start">
-                <div class="legend-swatch start"></div> Place Start
-            </button>
-            <button class="mode-btn end" id="mode-end">
-                <div class="legend-swatch end"></div> Place End
-            </button>
-        </div>
+        <div class="setup-body">
 
-        <div class="grid-container">
-            <div class="interactive-grid" id="grid">
-                <!-- Javascript will populate 256 cells -->
+            <!-- LEFT: Grid -->
+            <div class="grid-side">
+                <div class="placement-mode">
+                    <button class="mode-btn active start" id="mode-start">
+                        <span class="mode-dot start"></span> Place Start
+                    </button>
+                    <button class="mode-btn end" id="mode-end">
+                        <span class="mode-dot end"></span> Place End
+                    </button>
+                </div>
+
+                <div class="grid-container">
+                    <div class="grid-label-row" id="col-labels"></div>
+                    <div class="grid-with-labels">
+                        <div class="row-labels" id="row-labels"></div>
+                        <div class="interactive-grid" id="grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT: Config -->
+            <div class="config-panel">
+
+                <div class="config-card">
+                    <h3>Coordinates</h3>
+                    <div class="coord-chips">
+                        <div class="coord-chip" id="chip-start">
+                            <span class="mode-dot start"></span>
+                            <span class="c-label">Start</span>
+                            <span class="c-value" id="start-coord">not set</span>
+                        </div>
+                        <div class="coord-chip" id="chip-end">
+                            <span class="mode-dot end"></span>
+                            <span class="c-label">End</span>
+                            <span class="c-value" id="end-coord">not set</span>
+                        </div>
+                    </div>
+                    <div class="dist-row" id="dist-row" style="display:none">
+                        <span>Manhattan distance:</span>
+                        <strong id="dist-val">0</strong>
+                        <span>steps</span>
+                    </div>
+                </div>
+
+                <div class="config-card">
+                    <h3>Model Configuration</h3>
+                    <div class="hyperparam-grid">
+                        <div class="hp-item">
+                            <div class="hp-lbl">LAYERS</div>
+                            <div class="hp-val">6</div>
+                        </div>
+                        <div class="hp-item">
+                            <div class="hp-lbl">WIDTH</div>
+                            <div class="hp-val">256</div>
+                        </div>
+                        <div class="hp-item">
+                            <div class="hp-lbl">HEADS</div>
+                            <div class="hp-val">4</div>
+                        </div>
+                        <div class="hp-item">
+                            <div class="hp-lbl">GRID</div>
+                            <div class="hp-val">16x16</div>
+                        </div>
+                    </div>
+                    <div class="model-size-row">
+                        <label for="model-neurons">Neuron budget:</label>
+                        <select id="model-neurons">
+                            <option value="1000" selected>Default (1000)</option>
+                            <option value="5000">High-detail (5000)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="config-card">
+                    <h3>Visualization Features</h3>
+                    <div class="feature-list">
+                        <div class="feat-item">
+                            <span class="feat-icon">&#9670;</span>
+                            <span>Force-directed neural graph</span>
+                        </div>
+                        <div class="feat-item">
+                            <span class="feat-icon">&#9670;</span>
+                            <span>Sparse activation heatmap</span>
+                        </div>
+                        <div class="feat-item">
+                            <span class="feat-icon">&#9670;</span>
+                            <span>Hebbian weight dynamics</span>
+                        </div>
+                        <div class="feat-item">
+                            <span class="feat-icon">&#9670;</span>
+                            <span>3D neural walkthrough</span>
+                        </div>
+                        <div class="feat-item">
+                            <span class="feat-icon">&#9670;</span>
+                            <span>Attention atlas</span>
+                        </div>
+                        <div class="feat-item">
+                            <span class="feat-icon">&#9670;</span>
+                            <span>Concept probe analysis</span>
+                        </div>
+                        <div class="feat-item">
+                            <span class="feat-icon">&#9670;</span>
+                            <span>O(T) vs O(T^2) scaling</span>
+                        </div>
+                        <div class="feat-item">
+                            <span class="feat-icon">&#9670;</span>
+                            <span>Live telemetry + histogram</span>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="index.html" class="view-existing">View existing visualization</a>
+
+                <button class="btn-run" id="btn-run" disabled>Run Neural Engine</button>
+
             </div>
         </div>
-
-        <div class="status-panel">
-            <div class="status-item">
-                <div class="legend-swatch start"></div>
-                <span>Start:</span>
-                <strong id="start-coord">None</strong>
-            </div>
-            <div class="status-item">
-                <div class="legend-swatch end"></div>
-                <span>End:</span>
-                <strong id="end-coord">None</strong>
-            </div>
-        </div>
-
-        <div class="model-size">
-            <label for="model-neurons">Model size:</label>
-            <select id="model-neurons">
-                <option value="1000" selected>Default (1000 nodes)</option>
-                <option value="5000">High-detail (5000 nodes)</option>
-            </select>
-        </div>
-
-        <button class="btn-run" id="btn-run" disabled>Run Neural Engine</button>
     </div>
 
-    <!-- Loading Screen -->
+    <!-- Loading overlay -->
     <div class="loading-overlay" id="loading">
-        <div class="spinner"></div>
-        <h2>Computing Neural Trajectory...</h2>
-        <p>Running PyTorch Inference (GPU)</p>
+        <div class="loading-logo">BDH</div>
+        <div class="loading-title">Computing Neural Trajectory</div>
+        <div class="loading-sub">PyTorch GPU inference running...</div>
+        <div class="loading-steps">
+            <div class="loading-step" id="lstep-0">
+                <span class="step-dot"></span> Encoding grid topology
+            </div>
+            <div class="loading-step" id="lstep-1">
+                <span class="step-dot"></span> Initializing Hebbian weights
+            </div>
+            <div class="loading-step" id="lstep-2">
+                <span class="step-dot"></span> Running RECALL to EFFECT cycles
+            </div>
+            <div class="loading-step" id="lstep-3">
+                <span class="step-dot"></span> Extracting path and activations
+            </div>
+        </div>
+        <div class="loading-progress">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
     </div>
 
     <script>
-        const GRID_SIZE = 16;
-        let startPos = null; // {r, c}
-        let endPos = null; // {r, c}
-        let currentMode = 'start'; // 'start' or 'end'
+        var GRID_SIZE = 16;
+        var startPos = null;
+        var endPos = null;
+        var currentMode = 'start';
 
-        const gridEl = document.getElementById('grid');
-        const modeStartBtn = document.getElementById('mode-start');
-        const modeEndBtn = document.getElementById('mode-end');
-        const startCoordEl = document.getElementById('start-coord');
-        const endCoordEl = document.getElementById('end-coord');
-        const runBtn = document.getElementById('btn-run');
-        const loadingEl = document.getElementById('loading');
-        const modelNeuronsEl = document.getElementById('model-neurons');
+        var gridEl = document.getElementById('grid');
+        var modeStartBtn = document.getElementById('mode-start');
+        var modeEndBtn = document.getElementById('mode-end');
+        var startCoordEl = document.getElementById('start-coord');
+        var endCoordEl = document.getElementById('end-coord');
+        var chipStart = document.getElementById('chip-start');
+        var chipEnd = document.getElementById('chip-end');
+        var distRow = document.getElementById('dist-row');
+        var distVal = document.getElementById('dist-val');
+        var runBtn = document.getElementById('btn-run');
+        var loadingEl = document.getElementById('loading');
+        var loadingBar = document.getElementById('loading-bar');
+        var modelNeuronsEl = document.getElementById('model-neurons');
 
-        // Initialize grid
-        for (let r = 0; r < GRID_SIZE; r++) {
-            for (let c = 0; c < GRID_SIZE; c++) {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                cell.dataset.r = r;
-                cell.dataset.c = c;
-                cell.addEventListener('click', () => handleCellClick(r, c));
-                gridEl.appendChild(cell);
+        // Column labels
+        var colLabelEl = document.getElementById('col-labels');
+        for (var ci = 0; ci < GRID_SIZE; ci++) {
+            var cs = document.createElement('span');
+            cs.textContent = (ci % 2 === 0) ? ci : '';
+            colLabelEl.appendChild(cs);
+        }
+
+        // Row labels
+        var rowLabelEl = document.getElementById('row-labels');
+        for (var ri = 0; ri < GRID_SIZE; ri++) {
+            var rs = document.createElement('span');
+            rs.textContent = (ri % 2 === 0) ? ri : '';
+            rowLabelEl.appendChild(rs);
+        }
+
+        // Grid cells
+        for (var gr = 0; gr < GRID_SIZE; gr++) {
+            for (var gc = 0; gc < GRID_SIZE; gc++) {
+                (function(r, c) {
+                    var cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+                    cell.addEventListener('click', function() { handleCellClick(r, c); });
+                    gridEl.appendChild(cell);
+                })(gr, gc);
             }
         }
 
-        // Mode switching
-        modeStartBtn.addEventListener('click', () => {
+        modeStartBtn.addEventListener('click', function() {
             currentMode = 'start';
             modeStartBtn.classList.add('active');
             modeEndBtn.classList.remove('active');
         });
 
-        modeEndBtn.addEventListener('click', () => {
+        modeEndBtn.addEventListener('click', function() {
             currentMode = 'end';
             modeEndBtn.classList.add('active');
             modeStartBtn.classList.remove('active');
         });
 
         function handleCellClick(r, c) {
-            // Check if clicking same type to remove
             if (currentMode === 'start' && startPos && startPos.r === r && startPos.c === c) {
                 startPos = null;
             } else if (currentMode === 'end' && endPos && endPos.r === r && endPos.c === c) {
                 endPos = null;
+            } else if (currentMode === 'start') {
+                if (endPos && endPos.r === r && endPos.c === c) endPos = null;
+                startPos = { r: r, c: c };
+                currentMode = 'end';
+                modeStartBtn.classList.remove('active');
+                modeEndBtn.classList.add('active');
             } else {
-                // Ensure they don't overlap
-                if (currentMode === 'start') {
-                    if (endPos && endPos.r === r && endPos.c === c) endPos = null;
-                    startPos = { r, c };
-                    currentMode = 'end'; // Auto-switch for convenience
-                    modeStartBtn.classList.remove('active');
-                    modeEndBtn.classList.add('active');
-                } else {
-                    if (startPos && startPos.r === r && startPos.c === c) startPos = null;
-                    endPos = { r, c };
-                }
+                if (startPos && startPos.r === r && startPos.c === c) startPos = null;
+                endPos = { r: r, c: c };
             }
             updateView();
         }
 
         function updateView() {
-            // Clear grid
-            document.querySelectorAll('.cell').forEach(c => {
-                c.className = 'cell';
-                c.textContent = '';
+            document.querySelectorAll('.cell').forEach(function(cell) {
+                cell.className = 'cell';
+                cell.textContent = '';
             });
 
-            // Draw tokens
             if (startPos) {
-                const c = getCell(startPos.r, startPos.c);
-                c.classList.add('start');
-                c.textContent = 'S';
-                startCoordEl.textContent = `(${startPos.r}, ${startPos.c})`;
+                var sc = getCell(startPos.r, startPos.c);
+                sc.classList.add('start');
+                sc.textContent = 'S';
+                startCoordEl.textContent = '(' + startPos.r + ', ' + startPos.c + ')';
+                chipStart.classList.add('set-start');
             } else {
-                startCoordEl.textContent = 'None';
+                startCoordEl.textContent = 'not set';
+                chipStart.classList.remove('set-start');
             }
 
             if (endPos) {
-                const c = getCell(endPos.r, endPos.c);
-                c.classList.add('end');
-                c.textContent = 'E';
-                endCoordEl.textContent = `(${endPos.r}, ${endPos.c})`;
+                var ec = getCell(endPos.r, endPos.c);
+                ec.classList.add('end');
+                ec.textContent = 'E';
+                endCoordEl.textContent = '(' + endPos.r + ', ' + endPos.c + ')';
+                chipEnd.classList.add('set-end');
             } else {
-                endCoordEl.textContent = 'None';
+                endCoordEl.textContent = 'not set';
+                chipEnd.classList.remove('set-end');
             }
 
-            // Enable run button only if both exist
+            if (startPos && endPos) {
+                var dist = Math.abs(startPos.r - endPos.r) + Math.abs(startPos.c - endPos.c);
+                distVal.textContent = dist;
+                distRow.style.display = 'flex';
+            } else {
+                distRow.style.display = 'none';
+            }
+
             runBtn.disabled = !(startPos && endPos);
         }
 
         function getCell(r, c) {
-            return document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+            return document.querySelector('.cell[data-r="' + r + '"][data-c="' + c + '"]');
         }
 
-        // Run Engine
-        runBtn.addEventListener('click', async () => {
+        function animateLoadingSteps() {
+            var delays = [0, 700, 1500, 2500];
+            var progress = [22, 48, 76, 95];
+            for (var i = 0; i < 4; i++) {
+                (function(idx) {
+                    setTimeout(function() {
+                        if (idx > 0) {
+                            document.getElementById('lstep-' + (idx - 1)).className = 'loading-step done';
+                        }
+                        document.getElementById('lstep-' + idx).className = 'loading-step active';
+                        loadingBar.style.width = progress[idx] + '%';
+                    }, delays[idx]);
+                })(i);
+            }
+        }
+
+        runBtn.addEventListener('click', function() {
             if (!startPos || !endPos) return;
 
             loadingEl.style.display = 'flex';
+            animateLoadingSteps();
 
-            try {
-                const res = await fetch('/api/run', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        start: [startPos.r, startPos.c],
-                        end: [endPos.r, endPos.c],
-                        neurons: parseInt(modelNeuronsEl.value, 10)
-                    })
-                });
-
-                const data = await res.json();
-
+            fetch('/api/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    start: [startPos.r, startPos.c],
+                    end: [endPos.r, endPos.c],
+                    neurons: parseInt(modelNeuronsEl.value, 10)
+                })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
                 if (data.status === 'success') {
-                    // Redirect to the main visualization viewer
-                    window.location.href = 'index.html';
+                    loadingBar.style.width = '100%';
+                    setTimeout(function() {
+                        window.location.href = 'index.html';
+                    }, 400);
                 } else {
                     alert('Error running engine: ' + data.message);
                     loadingEl.style.display = 'none';
+                    loadingBar.style.width = '0%';
                 }
-
-            } catch (err) {
-                alert('Connection error. Is the python web server running?');
+            })
+            .catch(function() {
+                alert('Connection error. Is the Python server running?');
                 loadingEl.style.display = 'none';
-            }
+                loadingBar.style.width = '0%';
+            });
         });
-
     </script>
 </body>
 
