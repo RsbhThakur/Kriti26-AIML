@@ -1,206 +1,103 @@
-# 🐉 BDH Visualizer — Baby Dragon Hatchling Interactive Explorer
+# BDH Visualizer (KRITI Path A Final Submission)
 
-**Making Post-Transformer AI Visible and Understandable**
+Submission-ready, animation-first visual analytics for Dragon Hatchling (BDH), built to match Path A judging criteria:
+- visual clarity
+- technical correctness
+- architectural insight
+- presentation quality
 
-An interactive visualization suite that reveals the inner workings of the [Baby Dragon Hatchling (BDH)](https://arxiv.org/abs/2509.26507) architecture — the first post-transformer frontier model with Hebbian memory, sparse activations, and scale-free graph topology.
+Repository: `https://github.com/RsbhThakur/Kriti26-AIML`
 
-> Built for **Path A: Visualization and Inner Worlds** of the Pathway Post-Transformer Frontier AI Challenge (KRITI High Prep)
+## Final Entry Point
 
-![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-red)
-![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-orange)
-![License](https://img.shields.io/badge/License-MIT-green)
+Use `pages/5_🚀_Frontier_Studio.py` as the main demo page.  
+It is the superset implementation merging the strongest parts of `version2/web` and `bdh-visualizer`:
+- setup-style controls (fixed start/end, neuron budget, thresholds)
+- live pathfinder board replay with animated top attention connections
+- animated 2D neuron circuit and animated 3D neuron field
+- multi-board Hebbian progression animation
+- architecture equations and explainability narrative
 
----
+The other pages remain as focused explainers:
+- `1_🐉_BDH_Explainer.py`
+- `2_🧠_Sparse_Brain.py`
+- `3_🕸️_Graph_Brain.py`
+- `4_💡_Memory_Formation.py`
 
-## 🎯 What We Built
+## Model Resolution
 
-A five-part interactive visualization web application that makes BDH's unique architectural properties **visceral and understandable** to researchers, engineers, and non-experts alike. Our visualizer covers:
+Model checkpoint is resolved in this order:
+1. `BDH_MODEL_PATH` environment variable
+2. `../version2/boardpath.pt` (default, updated model)
+3. `./model/boardpath.pt` (fallback)
 
-1. **🧠 Sparse Brain** — Activation density comparator showing BDH's ~5% sparsity vs transformer's dense activations
-2. **🕸️ Graph Brain** — Interactive force-directed graph explorer of BDH's emergent scale-free neuron topology 
-3. **💡 Memory Formation** — Hebbian learning animator showing synapses strengthening in real-time
-4. **📐 Architecture Walkthrough** — Step-by-step forward pass tracer with BDH vs Transformer comparisons
-5. **🐉 BDH Explainer** — Animated interactive pipeline walkthrough inspired by [Transformer Explainer](https://poloclub.github.io/transformer-explainer/)
+Implemented in `core/runtime.py`.
 
----
-
-## 💡 Key Insight About BDH
-
-This visualizer reveals **five architectural breakthroughs** that make BDH fundamentally different from transformers:
-
-| Property | Transformer | BDH |
-|---|---|---|
-| **Structure** | Dense matrix layers | Scale-free graph of neurons |
-| **Activation** | Nearly all neurons fire (~50-100%) | Only ~5% fire (sparse + positive) |
-| **Memory** | KV-cache (grows with context) | Hebbian synapses (constant size) |
-| **Attention** | O(T²) quadratic | O(T) linear |
-| **Interpretability** | Black box | Graph structure is directly visualizable |
-
-The most powerful insight: **BDH's Hebbian gate (`xy_sparse = x_sparse * y_sparse`)** is the mathematical embodiment of "neurons that fire together wire together." This single operation creates constant-size memory, monosemantic synapses, and inference-time learning — all properties transformers fundamentally lack.
-
----
-
-## 🖥️ How to Run Locally
-
-### Prerequisites
-- Python 3.10+
-- pip
-
-### Installation
+## Local Run
 
 ```bash
-# Clone the repository
-git clone <repo-url>
 cd bdh-visualizer
-
-# Create virtual environment (recommended)
 python -m venv venv
-source venv/bin/activate  # Linux/Mac
-# venv\Scripts\activate   # Windows
-
-# Install dependencies
+source venv/bin/activate   # Windows PowerShell: .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-```
-
-### Run the App
-
-```bash
 streamlit run app.py
 ```
 
-The app will open at `http://localhost:8501`. Navigate between pages using the sidebar.
+Optional explicit model path:
 
----
-
-## 🌐 Hosted Demo
-
-**[Access the live demo here →](#)** *(Update with your deployment URL)*
-
-Deployment options:
-- **HuggingFace Spaces**: Upload this repo as a Streamlit Space
-- **Streamlit Cloud**: Connect your GitHub repo at [share.streamlit.io](https://share.streamlit.io)
-
----
-
-## 📁 Project Structure
-
-```
-bdh-visualizer/
-├── app.py                        # Main landing page
-├── pages/
-│   ├── 1_🧠_Sparse_Brain.py      # Activation density comparator
-│   ├── 2_🕸️_Graph_Brain.py       # Topology explorer
-│   ├── 3_💡_Memory_Formation.py   # Hebbian learning animator
-│   ├── 4_📐_Architecture.py       # Architecture walkthrough
-│   └── 5_🐉_BDH_Explainer.py     # Animated interactive explainer
-├── core/
-│   ├── __init__.py
-│   ├── bdh.py                    # BDH model (from official Pathway repo + extensions)
-│   ├── transformer.py            # Simple transformer for comparison
-│   └── analysis.py               # Sparsity, graph, Hebbian analysis utilities
-├── .streamlit/
-│   └── config.toml               # Theme and server configuration
-├── requirements.txt
-└── README.md
+```bash
+export BDH_MODEL_PATH=/absolute/path/to/boardpath.pt
+streamlit run app.py
 ```
 
----
+Sanity test:
 
-## 📊 Visualization Details
+```bash
+python check_setup.py
+```
 
-### 🧠 Sparse Brain (Activation Density Comparator)
-- **Side-by-side heatmaps**: BDH (~5% active) vs Transformer (~50%+ active) for the same input
-- **Activation distribution histograms**: BDH's dramatic sparsity vs Transformer's dense distribution
-- **Per-layer sparsity bar chart**: How sparsity varies across layers
-- **Per-token activity chart**: Track active neuron count as each character is processed
-- **Configurable**: Choose layer, number of displayed neurons, color scale
+## Deployment
 
-### 🕸️ Graph Brain (Emergent Topology Explorer)
-- **Interactive force-directed graph**: Neuron connectivity derived from encoder/decoder weight matrices
-- **Degree distribution (log-log)**: Evidence of scale-free (power-law) topology
-- **Connectivity heatmap**: Full neuron-to-neuron weight matrix
-- **Multi-head comparison**: Each head develops unique topology
-- **Network metrics**: Nodes, edges, average degree, clustering coefficient, components
-- **Configurable**: Layout algorithm, head selection, edge threshold, node coloring (degree/strength/community)
+### Option A: Hugging Face Spaces (recommended for judging)
+1. Create a new Space with SDK `Streamlit`.
+2. Upload `bdh-visualizer` contents as the Space repository root.
+3. Ensure `requirements.txt` is present.
+4. Add Space variable `BDH_MODEL_PATH` if using external checkpoint path; otherwise include `model/boardpath.pt` or keep `version2/boardpath.pt` in repo structure.
+5. Set app file to `app.py` (default for Streamlit Spaces).
 
-### 💡 Memory Formation (Hebbian Learning Animator)
-- **Synapse timeline**: Cumulative strength of top-K synapses as tokens are processed
-- **Instantaneous activation heatmap**: Hebbian gate values per token × synapse
-- **Sparsity per token chart**: How selective memory formation is
-- **Top active synapses bar chart**: Which synapses accumulate most memory
-- **3D cumulative strength surface**: Panoramic view of memory formation
-- **Live training**: Train a model from scratch and watch sparsity evolve in real-time
+### Option B: Streamlit Community Cloud
+1. Push `bdh-visualizer` to GitHub.
+2. Create new Streamlit app linked to `app.py`.
+3. Add `BDH_MODEL_PATH` in app secrets/environment if needed.
+4. Deploy and verify all pages, especially `Frontier Studio`.
 
-### 📐 Architecture Walkthrough
-- **Architecture diagram**: Visual representation of BDH's computation pipeline
-- **Step-by-step forward pass**: Trace tensors through every stage with shape, sparsity, and heatmap at each step
-- **BDH vs Transformer comparison table**: Nine-property head-to-head comparison
-- **Memory scaling chart**: BDH constant vs Transformer linear memory growth
-- **Complexity scaling chart**: O(T) vs O(T²) attention computation cost
-- **Mathematical deep dive**: Full forward pass equations with LaTeX
+## Reproducibility Assets
 
-### 🐉 BDH Explainer (Animated Interactive Walkthrough)
-Inspired by Georgia Tech's [Transformer Explainer](https://poloclub.github.io/transformer-explainer/), this page provides a full animated pipeline walkthrough of BDH's forward pass:
+Generate JSON assets compatible with `version2/web`:
 
-- **Clickable token ribbon**: Select any input token to see its journey through the network — hover for instant stats (active neurons %, strongest neuron, Hebbian gate output)
-- **7 expandable pipeline stages**: Embedding → Encoder (D→N) → Sparse ReLU → Rotary Attention → Hebbian Gate → Decoder → Output Probabilities — each with icon, math equation, description, and live data
-- **Animated data flow**: Pulsing SVG arrows between stages with scroll-triggered fade-in animations
-- **Neuron grids**: 256-neuron grid visualizations showing active (cyan) vs silent neurons for Sparse ReLU, and Hebbian-gated synapses (red) for the Hebbian gate
-- **Canvas heatmaps**: Full tokens × sampled-neurons activation heatmaps for both x_sparse and xy_sparse
-- **Live stats cards**: Active %, max activation, strongest neuron, probability scores — all updating per selected token
-- **BDH vs Transformer comparison table**: Inline comparison of complexity, sparsity, memory, and position encoding
-- **Per-layer activity bar chart**: Active neuron percentage across all layers with current layer highlighted
-- **Top-10 output predictions**: Gradient bar chart of softmax probabilities for next-token prediction
-- **Sidebar controls**: Input text, layer/head selector, animation speed
+```bash
+python scripts/build_submission_assets.py
+```
 
----
+Outputs:
+- `version2/web/data/viz_data.json`
+- `version2/web/data/hebbian_data.json`
 
-## 🎥 Demo Video
+## Submission Checklist
 
-[Watch the demo video →](#) *(Update with YouTube/video URL)*
+- hosted demo link (public and working)
+- public GitHub repository
+- 2-3 minute demo video
+- README with:
+  - what was built
+  - insights shown about BDH
+  - local run steps
+  - hosted demo link
+  - team contributions
+  - limitations and future scope
 
----
+## References
 
-## 👥 Team Members and Contributions
-
-| Member | Contribution |
-|--------|-------------|
-| *Name 1* | Sparse Brain visualization, analysis utilities |
-| *Name 2* | Graph Brain topology explorer, network analysis |
-| *Name 3* | Hebbian Learning animator, training visualization |
-| *Name 4* | Architecture walkthrough, comparison charts, README |
-
----
-
-## ⚠️ Limitations and Future Scope
-
-### Current Limitations
-- Uses a **compact demo model** (4 layers, 128 embed dim) for fast CPU inference; activation patterns are demonstrative but not from a fully trained model
-- Graph topology is derived from **weight matrix correlations** as a proxy for BDH's true G_x = E @ D interaction graph
-- No pre-trained weights loaded — uses randomly initialized models (properties like sparsity are architectural and hold regardless)
-- Training visualization is limited to small models and short texts for interactive speed
-
-### Future Scope
-- **Load pre-trained checkpoints** from Pathway's official repository for fully trained model analysis
-- **Monosemanticity dashboard**: Systematically identify synapses encoding specific concepts (currency, country, etc.)
-- **Pathfinding visualization**: Port krychu/bdh maze-solving demo to web
-- **Enhanced BDH Explainer**: Add auto-play animation mode that walks through stages automatically, WebGL-powered neuron particle effects
-- **3D WebGL neuron graph**: Three.js-based immersive topology exploration
-- **Long-context benchmark**: Compare BDH and Transformer at 50K+ tokens with live memory tracking
-- **Cross-lingual synapse analysis**: Explore whether synapses activate consistently across languages
-
----
-
-## 📝 References
-
-- A. Kosowski, P. Uznański, J. Chorowski, Z. Stamirowska, M. Bartoszkiewicz. *[The Dragon Hatchling: The Missing Link between the Transformer and Models of the Brain](https://arxiv.org/abs/2509.26507)*, arXiv (2025).
-- Official BDH code: [github.com/pathwaycom/bdh](https://github.com/pathwaycom/bdh)
-- Pathway: [pathway.com](https://pathway.com/)
-- Inspiration: [Transformer Explainer (Georgia Tech)](https://poloclub.github.io/transformer-explainer/)
-
----
-
-## 📄 License
-
-MIT License. BDH model code adapted from [Pathway Technology, Inc.](https://github.com/pathwaycom/bdh) under MIT License.
+- BDH paper: `https://arxiv.org/abs/2509.26507`
+- Transformer Explainer inspiration: `https://poloclub.github.io/transformer-explainer/`
+- Pathway: `https://pathway.com/`

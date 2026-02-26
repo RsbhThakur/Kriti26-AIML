@@ -313,14 +313,36 @@ def compute_force_layout(edges, weights, M, seed=42, iterations=100):
 # Board Generation
 # ─────────────────────────────────────────────
 
-def generate_board(size=10, max_wall_prob=0.3):
-    """Generate a valid board with shortest path (BFS)."""
+def generate_board(size=10, max_wall_prob=0.3, fixed_start=None, fixed_end=None):
+    """Generate a valid board with shortest path (BFS).
+
+    Args:
+        size: board dimension.
+        max_wall_prob: wall probability for non-fixed cells.
+        fixed_start: optional tuple (r, c) for start position.
+        fixed_end: optional tuple (r, c) for end position.
+    """
     while True:
         board = [[FLOOR] * size for _ in range(size)]
-        start = (random.randrange(size), random.randrange(size))
-        end = (random.randrange(size), random.randrange(size))
-        while end == start:
+        if fixed_start is not None:
+            start = tuple(fixed_start)
+            if not (0 <= start[0] < size and 0 <= start[1] < size):
+                raise ValueError(f"fixed_start out of range: {fixed_start}")
+        else:
+            start = (random.randrange(size), random.randrange(size))
+
+        if fixed_end is not None:
+            end = tuple(fixed_end)
+            if not (0 <= end[0] < size and 0 <= end[1] < size):
+                raise ValueError(f"fixed_end out of range: {fixed_end}")
+        else:
             end = (random.randrange(size), random.randrange(size))
+
+        if end == start:
+            if fixed_start is not None and fixed_end is not None:
+                raise ValueError("fixed_start and fixed_end cannot be the same cell")
+            while end == start:
+                end = (random.randrange(size), random.randrange(size))
         board[start[0]][start[1]] = START
         board[end[0]][end[1]] = END
         for r in range(size):

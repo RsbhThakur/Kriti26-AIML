@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BDH — Setup Simulation</title>
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            overflow-y: auto !important;
+        }
+
+        .setup-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .setup-header {
+            margin-bottom: 2rem;
+        }
+
+        .setup-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .setup-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+        }
+
+        .grid-container {
+            background: var(--bg-1);
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--surface-border);
+            box-shadow: var(--surface-elevation);
+            margin-bottom: 2rem;
+        }
+
+        .interactive-grid {
+            display: grid;
+            grid-template-columns: repeat(16, 28px);
+            grid-template-rows: repeat(16, 28px);
+            gap: 1px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--surface-border);
+        }
+
+        .cell {
+            width: 28px;
+            height: 28px;
+            background: var(--bg-0);
+            cursor: pointer;
+            transition: background 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            user-select: none;
+        }
+
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .cell.start {
+            background: var(--clr-start);
+        }
+
+        .cell.end {
+            background: var(--clr-end);
+        }
+
+        .status-panel {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            padding: 1rem 2rem;
+            background: var(--bg-1);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--surface-border);
+        }
+
+        .model-size {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.2rem;
+            padding: 0.8rem 1rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--surface-border);
+            background: var(--bg-1);
+            color: var(--text-secondary);
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .model-size label {
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        .model-size select {
+            background: var(--bg-2);
+            color: var(--text-primary);
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-sm);
+            padding: 0.35rem 0.6rem;
+            cursor: pointer;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .status-item span {
+            color: var(--text-secondary);
+        }
+
+        .status-item strong {
+            color: var(--text-primary);
+            font-size: 1.2rem;
+        }
+
+        .btn-run {
+            padding: 1rem 3rem;
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-run:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 142, 252, 0.3);
+        }
+
+        .btn-run:disabled {
+            background: var(--bg-2);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(4, 6, 14, 0.8);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(79, 142, 252, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--accent-primary);
+            animation: spin 1s infinite linear;
+            margin-bottom: 1.5rem;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-overlay h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-overlay p {
+            color: var(--text-secondary);
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .placement-mode {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .mode-btn {
+            padding: 0.5rem 1.5rem;
+            background: var(--bg-2);
+            border: 1px solid var(--surface-border);
+            color: var(--text-secondary);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active.start {
+            background: rgba(46, 168, 98, 0.15);
+            border-color: var(--clr-start);
+            color: var(--clr-start);
+        }
+
+        .mode-btn.active.end {
+            background: rgba(201, 68, 68, 0.15);
+            border-color: var(--clr-end);
+            color: var(--clr-end);
+        }
+    </style>
+</head>
+
+<body data-intensity="low">
+
+    <div class="setup-container">
+        <div class="setup-header">
+            <h1>BDH Engine Setup</h1>
+            <p>Select the exact Start and End coordinates on the 16x16 grid below. The neural network will dynamically
+                compute the shortest path taking obstacles into account.</p>
+        </div>
+
+        <div class="placement-mode">
+            <button class="mode-btn active start" id="mode-start">
+                <div class="legend-swatch start"></div> Place Start
+            </button>
+            <button class="mode-btn end" id="mode-end">
+                <div class="legend-swatch end"></div> Place End
+            </button>
+        </div>
+
+        <div class="grid-container">
+            <div class="interactive-grid" id="grid">
+                <!-- Javascript will populate 256 cells -->
+            </div>
+        </div>
+
+        <div class="status-panel">
+            <div class="status-item">
+                <div class="legend-swatch start"></div>
+                <span>Start:</span>
+                <strong id="start-coord">None</strong>
+            </div>
+            <div class="status-item">
+                <div class="legend-swatch end"></div>
+                <span>End:</span>
+                <strong id="end-coord">None</strong>
+            </div>
+        </div>
+
+        <div class="model-size">
+            <label for="model-neurons">Model size:</label>
+            <select id="model-neurons">
+                <option value="1000" selected>Default (1000 nodes)</option>
+                <option value="5000">High-detail (5000 nodes)</option>
+            </select>
+        </div>
+
+        <button class="btn-run" id="btn-run" disabled>Run Neural Engine</button>
+    </div>
+
+    <!-- Loading Screen -->
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+        <h2>Computing Neural Trajectory...</h2>
+        <p>Running PyTorch Inference (GPU)</p>
+    </div>
+
+    <script>
+        const GRID_SIZE = 16;
+        let startPos = null; // {r, c}
+        let endPos = null; // {r, c}
+        let currentMode = 'start'; // 'start' or 'end'
+
+        const gridEl = document.getElementById('grid');
+        const modeStartBtn = document.getElementById('mode-start');
+        const modeEndBtn = document.getElementById('mode-end');
+        const startCoordEl = document.getElementById('start-coord');
+        const endCoordEl = document.getElementById('end-coord');
+        const runBtn = document.getElementById('btn-run');
+        const loadingEl = document.getElementById('loading');
+        const modelNeuronsEl = document.getElementById('model-neurons');
+
+        // Initialize grid
+        for (let r = 0; r < GRID_SIZE; r++) {
+            for (let c = 0; c < GRID_SIZE; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.r = r;
+                cell.dataset.c = c;
+                cell.addEventListener('click', () => handleCellClick(r, c));
+                gridEl.appendChild(cell);
+            }
+        }
+
+        // Mode switching
+        modeStartBtn.addEventListener('click', () => {
+            currentMode = 'start';
+            modeStartBtn.classList.add('active');
+            modeEndBtn.classList.remove('active');
+        });
+
+        modeEndBtn.addEventListener('click', () => {
+            currentMode = 'end';
+            modeEndBtn.classList.add('active');
+            modeStartBtn.classList.remove('active');
+        });
+
+        function handleCellClick(r, c) {
+            // Check if clicking same type to remove
+            if (currentMode === 'start' && startPos && startPos.r === r && startPos.c === c) {
+                startPos = null;
+            } else if (currentMode === 'end' && endPos && endPos.r === r && endPos.c === c) {
+                endPos = null;
+            } else {
+                // Ensure they don't overlap
+                if (currentMode === 'start') {
+                    if (endPos && endPos.r === r && endPos.c === c) endPos = null;
+                    startPos = { r, c };
+                    currentMode = 'end'; // Auto-switch for convenience
+                    modeStartBtn.classList.remove('active');
+                    modeEndBtn.classList.add('active');
+                } else {
+                    if (startPos && startPos.r === r && startPos.c === c) startPos = null;
+                    endPos = { r, c };
+                }
+            }
+            updateView();
+        }
+
+        function updateView() {
+            // Clear grid
+            document.querySelectorAll('.cell').forEach(c => {
+                c.className = 'cell';
+                c.textContent = '';
+            });
+
+            // Draw tokens
+            if (startPos) {
+                const c = getCell(startPos.r, startPos.c);
+                c.classList.add('start');
+                c.textContent = 'S';
+                startCoordEl.textContent = `(${startPos.r}, ${startPos.c})`;
+            } else {
+                startCoordEl.textContent = 'None';
+            }
+
+            if (endPos) {
+                const c = getCell(endPos.r, endPos.c);
+                c.classList.add('end');
+                c.textContent = 'E';
+                endCoordEl.textContent = `(${endPos.r}, ${endPos.c})`;
+            } else {
+                endCoordEl.textContent = 'None';
+            }
+
+            // Enable run button only if both exist
+            runBtn.disabled = !(startPos && endPos);
+        }
+
+        function getCell(r, c) {
+            return document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+        }
+
+        // Run Engine
+        runBtn.addEventListener('click', async () => {
+            if (!startPos || !endPos) return;
+
+            loadingEl.style.display = 'flex';
+
+            try {
+                const res = await fetch('/api/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        start: [startPos.r, startPos.c],
+                        end: [endPos.r, endPos.c],
+                        neurons: parseInt(modelNeuronsEl.value, 10)
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    // Redirect to the main visualization viewer
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Error running engine: ' + data.message);
+                    loadingEl.style.display = 'none';
+                }
+
+            } catch (err) {
+                alert('Connection error. Is the python web server running?');
+                loadingEl.style.display = 'none';
+            }
+        });
+
+    </script>
+</body>
+
+</html>

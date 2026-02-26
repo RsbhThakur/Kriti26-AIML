@@ -24,10 +24,10 @@ from core.bdh import (
     FLOOR, WALL, START, END, PATH, BOARD_NAMES
 )
 from core.analysis import per_layer_sparsity
+from core.runtime import resolve_model_path
 
 st.set_page_config(page_title="BDH Explainer", page_icon="🐉", layout="wide")
-
-MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "model", "boardpath.pt")
+MODEL_PATH = str(resolve_model_path())
 
 
 @st.cache_resource
@@ -184,6 +184,7 @@ st.sidebar.markdown(f"""
 **Task:** Pathfinding on {bp_params.get('board_size', 10)}×{bp_params.get('board_size', 10)} boards
 **Graph:** {len(nodes_json)} nodes, {len(edges_json)} edges
 """)
+st.sidebar.caption(f"Checkpoint: `{MODEL_PATH}`")
 
 inf_data = run_inference(model, bp_params, bdh_params)
 viz_json = build_viz_json(inf_data, nodes_json, edges_json, kept_indices)

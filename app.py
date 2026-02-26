@@ -3,6 +3,11 @@
 Main landing page. Uses a REAL trained BDH model (pathfinding on 10×10 boards).
 """
 import streamlit as st
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+from core.runtime import resolve_model_path
 
 st.set_page_config(
     page_title="BDH Visualizer",
@@ -98,6 +103,7 @@ st.divider()
 
 # Feature cards
 st.markdown("## 🗺️ Explore the Visualizations")
+st.info("Start with `🚀 Frontier Studio` in the sidebar for the complete, submission-ready superset demo.")
 
 col1, col2 = st.columns(2)
 with col1:
@@ -193,6 +199,7 @@ st.sidebar.markdown("""
 - 🧠 **Sparse Brain** — Activation density
 - 🕸️ **Graph Brain** — Topology explorer
 - 💡 **Memory Formation** — Hebbian dynamics
+- 🚀 **Frontier Studio** — Unified final submission hub
 """)
 st.sidebar.markdown("---")
 st.sidebar.markdown(
@@ -200,3 +207,5 @@ st.sidebar.markdown(
     "[Code](https://github.com/krychu/bdh) · "
     "[Pathway](https://pathway.com/)"
 )
+st.sidebar.markdown("---")
+st.sidebar.caption(f"Checkpoint: `{resolve_model_path()}`")

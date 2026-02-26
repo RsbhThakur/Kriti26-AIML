@@ -1,68 +1,59 @@
 #!/usr/bin/env python3
-"""Quick check that all imports work."""
-try:
-    import torch
-    print(f"torch: {torch.__version__}")
-except ImportError as e:
-    print(f"MISSING: torch - {e}")
+"""Sanity check for the submission app environment."""
+from __future__ import annotations
 
-try:
-    import streamlit
-    print(f"streamlit: {streamlit.__version__}")
-except ImportError as e:
-    print(f"MISSING: streamlit - {e}")
+import os
+import sys
 
-try:
-    import plotly
-    print(f"plotly: {plotly.__version__}")
-except ImportError as e:
-    print(f"MISSING: plotly - {e}")
+ROOT = os.path.dirname(__file__)
+sys.path.insert(0, ROOT)
 
-try:
-    import networkx
-    print(f"networkx: {networkx.__version__}")
-except ImportError as e:
-    print(f"MISSING: networkx - {e}")
 
-try:
-    import numpy
-    print(f"numpy: {numpy.__version__}")
-except ImportError as e:
-    print(f"MISSING: numpy - {e}")
+def check_import(name: str):
+    try:
+        mod = __import__(name)
+        print(f"{name}: {getattr(mod, '__version__', 'ok')}")
+    except Exception as exc:
+        print(f"MISSING: {name} - {exc}")
 
-# Test BDH model instantiation
-try:
-    import sys, os
-    sys.path.insert(0, os.path.dirname(__file__))
-    from core.bdh import BDH, BDHConfig
-    config = BDHConfig(n_layer=2, n_embd=64, n_head=2, mlp_internal_dim_multiplier=32, vocab_size=256, dropout=0.0)
-    model = BDH(config)
-    idx = torch.tensor([[72, 101, 108, 108, 111]], dtype=torch.long)
-    logits, loss = model(idx)
-    print(f"BDH model OK - output shape: {logits.shape}")
-    _, intermediates = model.forward_with_intermediates(idx)
-    print(f"Forward with intermediates OK - {len(intermediates['layer_x_sparse'])} layers captured")
-    
-    from core.analysis import compute_sparsity
-    sp = compute_sparsity(intermediates['layer_x_sparse'][0])
-    print(f"Sparsity of layer 0: {sp*100:.1f}% (active: {(1-sp)*100:.1f}%)")
-except Exception as e:
-    print(f"BDH MODEL ERROR: {e}")
-    import traceback
-    traceback.print_exc()
 
-# Test Transformer
-try:
-    from core.transformer import SimpleTransformer, TransformerConfig
-    tf_config = TransformerConfig(n_layer=2, n_embd=64, n_head=2, vocab_size=256)
-    tf_model = SimpleTransformer(tf_config)
-    _, tf_int = tf_model.forward_with_intermediates(idx)
-    print(f"Transformer OK - {len(tf_int['layer_mlp_activations'])} layers captured")
-    sp_tf = compute_sparsity(tf_int['layer_mlp_activations'][0])
-    print(f"Transformer layer 0 sparsity: {sp_tf*100:.1f}% (active: {(1-sp_tf)*100:.1f}%)")
-except Exception as e:
-    print(f"TRANSFORMER ERROR: {e}")
-    import traceback
-    traceback.print_exc()
+def main():
+    print("== Python Dependencies ==")
+    for pkg in ["torch", "streamlit", "plotly", "networkx", "numpy", "scipy"]:
+        check_import(pkg)
 
-print("\n=== ALL CHECKS PASSED ===")
+    print("\n== Model Load Test ==")
+    try:
+        from core.runtime import resolve_model_path
+        from core.bdh import load_bdh, generate_board
+        import torch
+
+        ckpt = resolve_model_path()
+        model, bp_params, bdh_params = load_bdh(str(ckpt))
+        model.eval()
+        print(f"checkpoint: {ckpt}")
+        print(
+            f"model: L={bdh_params.L}, N={bdh_params.N}, D={bdh_params.D}, H={bdh_params.H}, "
+            f"board={bp_params.get('board_size', 10)}"
+        )
+
+        board, _ = generate_board(
+            size=bp_params.get("board_size", 10),
+            max_wall_prob=bp_params.get("wall_prob", 0.3),
+        )
+        x = board.flatten().unsqueeze(0)
+        with torch.no_grad():
+            logits, _, x_frames, y_frames, _, _ = model(x, capture_frames=True)
+        print(f"inference: logits={tuple(logits.shape)}, layers={len(x_frames)}")
+        print(f"sparsity sample: x={(x_frames[0] > 0).float().mean().item() * 100:.2f}% active")
+        print(f"sparsity sample: y={(y_frames[0] > 0).float().mean().item() * 100:.2f}% active")
+    except Exception as exc:
+        print(f"MODEL ERROR: {exc}")
+        raise
+
+    print("\n== Setup looks good ==")
+
+
+if __name__ == "__main__":
+    main()
+

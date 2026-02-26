@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BDH Neural Pathfinding — Interactive Dashboard</title>
+
+    <!-- MathJax for rendering LaTeX -->
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Tailwind CSS (CDN for Explainer Dashboard Shell) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    gridTemplateColumns: {
+                        '16': 'repeat(16, minmax(0, 1fr))',
+                    },
+                    gridTemplateRows: {
+                        '16': 'repeat(16, minmax(0, 1fr))',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <!-- Three.js import map (must precede any type="module" scripts) -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <!-- Vanilla CSS Fallback for specific D3 tooltip/graph styles not covered by Tailwind -->
+    <link rel="stylesheet" href="css/style.css">
+
+    <style>
+        /* Base overrides to prevent Tailwind from completely breaking D3 SVGs */
+        svg {
+            overflow: visible;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Hide old panels */
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Ensure D3 charts scale nicely in Tailwind containers */
+        .analysis-body svg {
+            width: 100%;
+            height: auto;
+        }
+
+        #board-container svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        #graph-container svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Fixed height or flex for force graph */
+
+        /* D3 Scrubber Override */
+        input[type=range].scrubber {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body class="bg-zinc-950 text-zinc-300 antialiased selection:bg-indigo-500/30" data-intensity="low">
+
+    <!-- ═══ Header ═══ -->
+    <header
+        class="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-zinc-900/80 backdrop-blur-md border-b border-white/5 shadow-2xl shadow-black/40">
+        <div class="flex items-center gap-3">
+            <!-- Back Button -->
+            <a href="setup.html"
+                class="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-700 transition-colors shadow-lg"
+                title="Back to Setup">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"></path>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+            </a>
+            <div
+                class="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-500/20">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                    </path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-sm font-semibold text-zinc-100 tracking-wide">BDH Neural Pathfinding</h1>
+                <p class="text-xs text-zinc-500 font-medium">Interactive Explainer Dashboard</p>
+            </div>
+
+            <!-- Hidden original elements needed by JS -->
+            <div style="display:none;">
+                <span id="neuron-count">0</span>
+                <span id="edge-count">0</span>
+                <select id="intensity-select">
+                    <option value="low" selected>Low</option>
+                </select>
+                <div id="step-pips">
+                    <div class="step-pip"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Controls -->
+        <div class="flex items-center gap-4 bg-zinc-950/50 px-4 py-2 rounded-xl border border-white/5 transition-all">
+            <button id="btn-prev" class="text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                title="Previous Step">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 19 2 12 11 5 11 19"></polygon>
+                    <polygon points="22 19 13 12 22 5 22 19"></polygon>
+                </svg>
+            </button>
+            <div class="h-4 w-px bg-zinc-800"></div>
+            <button id="btn-play"
+                class="flex items-center gap-2 text-sm font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer shadow-lg">
+                <svg id="icon-play" width="16" height="16" class="text-emerald-400" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <svg id="icon-pause" width="16" height="16" class="text-indigo-400 hidden" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+                <span id="play-text">RUN ENGINE</span>
+            </button>
+            <div class="h-4 w-px bg-zinc-800"></div>
+            <button id="btn-next" class="text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
+                title="Next Step">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 19 22 12 13 5 13 19"></polygon>
+                    <polygon points="2 19 11 12 2 5 2 19"></polygon>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main 3-Pane Layout (Bento Box) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1800px] mx-auto min-h-[calc(100vh-73px)]">
+
+        <!-- ═══ Left Sidebar: Navigation & Controls ═══ -->
+        <aside class="lg:col-span-2 flex flex-col gap-6">
+            <nav class="flex flex-col gap-2" id="tab-bar">
+                <h2 class="text-xs font-bold uppercase tracking-[0.15em] text-zinc-500 mb-2">Chapters</h2>
+                <button
+                    class="tab-btn flex items-center justify-between p-3 rounded-xl border border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:border-white/5 hover:text-zinc-200 transition-all duration-200 cursor-pointer active [&.active]:bg-zinc-900 [&.active]:border-zinc-700 [&.active]:text-zinc-100 [&.active]:shadow-sm"
+                    data-tab="graph">
+                    <span class="text-sm font-medium">Neural Dynamics</span>
+                </button>
+                <button
+                    class="tab-btn flex items-center justify-between p-3 rounded-xl border border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:border-white/5 hover:text-zinc-200 transition-all duration-200 cursor-pointer [&.active]:bg-zinc-900 [&.active]:border-zinc-700 [&.active]:text-zinc-100 [&.active]:shadow-sm"
+                    data-tab="sparse">
+                    <span class="text-sm font-medium">Sparse Brain</span>
+                </button>
+                <button
+                    class="tab-btn flex items-center justify-between p-3 rounded-xl border border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:border-white/5 hover:text-zinc-200 transition-all duration-200 cursor-pointer [&.active]:bg-zinc-900 [&.active]:border-zinc-700 [&.active]:text-zinc-100 [&.active]:shadow-sm"
+                    data-tab="topology">
+                    <span class="text-sm font-medium">Topology</span>
+                </button>
+                <button
+                    class="tab-btn flex items-center justify-between p-3 rounded-xl border border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:border-white/5 hover:text-zinc-200 transition-all duration-200 cursor-pointer [&.active]:bg-zinc-900 [&.active]:border-zinc-700 [&.active]:text-zinc-100 [&.active]:shadow-sm"
+                    data-tab="hebbian">
+                    <span class="text-sm font-medium">Hebbian Action</span>
+                </button>
+                <button
+                    class="tab-btn flex items-center justify-between p-3 rounded-xl border border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:border-white/5 hover:text-zinc-200 transition-all duration-200 cursor-pointer [&.active]:bg-zinc-900 [&.active]:border-zinc-700 [&.active]:text-zinc-100 [&.active]:shadow-sm"
+                    data-tab="three">
+                    <span class="text-sm font-medium">3D Walkthrough</span>
+                </button>
+                <button
+                    class="tab-btn flex items-center justify-between p-3 rounded-xl border border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:border-white/5 hover:text-zinc-200 transition-all duration-200 cursor-pointer [&.active]:bg-zinc-900 [&.active]:border-zinc-700 [&.active]:text-zinc-100 [&.active]:shadow-sm"
+                    data-tab="memory">
+                    <span class="text-sm font-medium">Memory Theory</span>
+                </button>
+                <button
+                    class="tab-btn flex items-center justify-between p-3 rounded-xl border border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:border-white/5 hover:text-zinc-200 transition-all duration-200 cursor-pointer [&.active]:bg-zinc-900 [&.active]:border-zinc-700 [&.active]:text-zinc-100 [&.active]:shadow-sm"
+                    data-tab="attention">
+                    <span class="text-sm font-medium">Attention Atlas</span>
+                </button>
+                <button
+                    class="tab-btn flex items-center justify-between p-3 rounded-xl border border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:border-white/5 hover:text-zinc-200 transition-all duration-200 cursor-pointer [&.active]:bg-zinc-900 [&.active]:border-zinc-700 [&.active]:text-zinc-100 [&.active]:shadow-sm"
+                    data-tab="concept">
+                    <span class="text-sm font-medium">Concept Probe</span>
+                </button>
+                <button
+                    class="tab-btn flex items-center justify-between p-3 rounded-xl border border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:border-white/5 hover:text-zinc-200 transition-all duration-200 cursor-pointer [&.active]:bg-zinc-900 [&.active]:border-zinc-700 [&.active]:text-zinc-100 [&.active]:shadow-sm"
+                    data-tab="scaling">
+                    <span class="text-sm font-medium">Scaling Lab</span>
+                </button>
+                <button
+                    class="tab-btn flex items-center justify-between p-3 rounded-xl border border-transparent text-zinc-400 hover:bg-zinc-900/50 hover:border-white/5 hover:text-zinc-200 transition-all duration-200 cursor-pointer [&.active]:bg-zinc-900 [&.active]:border-zinc-700 [&.active]:text-zinc-100 [&.active]:shadow-sm"
+                    data-tab="inference">
+                    <span class="text-sm font-medium">Architecture</span>
+                </button>
+            </nav>
+
+            <div class="mt-auto p-4 rounded-xl bg-zinc-900 border border-white/5 shadow-lg shadow-black/20">
+                <h3 class="text-xs font-bold uppercase tracking-[0.15em] text-zinc-500 mb-3">Model Status</h3>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="relative flex h-2.5 w-2.5">
+                        <span
+                            class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span
+                            class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+                    </div>
+                    <span class="text-sm text-zinc-300 font-medium">Active Inference</span>
+                </div>
+                <!-- Frame / Layer Display -->
+                <div class="text-xs text-zinc-400 font-mono mt-3 p-2 bg-zinc-950 rounded border border-white/5">
+                    Layer <span id="layer-display" class="text-indigo-400 font-bold">0</span> / <span
+                        id="total-layers">0</span>
+                    <br>
+                    <div class="mt-2 text-[10px] uppercase tracking-wider text-zinc-500">Sub-Step:</div>
+                    <span id="step-badge" class="font-bold text-amber-500">RECALL</span>
+                    <div id="step-description" class="mt-1 text-zinc-500 leading-tight">Initialization</div>
+                </div>
+
+                <input type="range" id="scrubber" class="scrubber w-full mt-4 cursor-pointer" min="0" max="0" value="0">
+            </div>
+        </aside>
+
+        <!-- ═══ Center Stage: Visualizer & Math Explanations ═══ -->
+        <main class="app-main lg:col-span-7 flex flex-col gap-6 pr-4">
+
+            <!-- ── Tab 1: Neuron Graph + Board ── -->
+            <div class="tab-panel active w-full" id="panel-graph">
+
+                <!-- Force Directed Graph -->
+                <div
+                    class="rounded-xl bg-zinc-900 border border-white/5 p-6 shadow-2xl shadow-black/40 w-full flex flex-col items-center group relative overflow-hidden">
+                    <div class="w-full flex justify-between items-center mb-2 z-10">
+                        <h3 class="text-xs font-bold uppercase tracking-[0.15em] text-zinc-500">Neuron Dynamics (Force
+                            Graph)</h3>
+                    </div>
+                    <!-- Glow effect -->
+                    <div
+                        class="absolute top-1/2 left-1/2 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl -translate-y-1/2 -translate-x-1/2 pointer-events-none">
+                    </div>
+
+                    <!-- D3 Graph Container -->
+                    <div id="graph-container" class="w-full h-[700px] min-h-[75vh] z-10">
+                        <!-- SVG injected by JS -->
+                    </div>
+
+                    <!-- Floating mini chart popup for selected node/edge -->
+                    <div id="chart-panel"
+                        class="hidden absolute bottom-6 right-6 w-[420px] max-w-[90vw] bg-zinc-950/95 border border-zinc-700 rounded-xl shadow-2xl shadow-black/60 z-20 backdrop-blur-sm">
+                        <div class="flex items-center justify-between px-3 py-2 border-b border-zinc-800">
+                            <span id="chart-label" class="text-xs font-semibold text-zinc-200 truncate pr-4">Selection</span>
+                            <button id="chart-close"
+                                class="text-zinc-400 hover:text-zinc-100 transition-colors text-sm leading-none">✕</button>
+                        </div>
+                        <div id="chart-inner" class="h-[220px] p-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Tab 2: Sparse Brain ── -->
+            <div class="tab-panel w-full" id="panel-sparse">
+                <div class="rounded-xl bg-zinc-900 border border-white/5 p-6 shadow-2xl shadow-black/40">
+                    <div class="mb-6">
+                        <h2 class="text-lg font-semibold text-zinc-100">Sparse Brain Analytics</h2>
+                        <p class="text-sm text-zinc-400">Activation density across layers — x (recall) vs y (Hebbian
+                            gate)</p>
+                    </div>
+                    <div class="analysis-body bg-zinc-950 rounded-xl border border-zinc-800 p-4 min-h-[400px]"
+                        id="sparse-body"></div>
+                </div>
+            </div>
+
+            <!-- ── Tab 3: Graph Topology ── -->
+            <div class="tab-panel w-full" id="panel-topology">
+                <div class="rounded-xl bg-zinc-900 border border-white/5 p-6 shadow-2xl shadow-black/40">
+                    <div class="mb-6">
+                        <h2 class="text-lg font-semibold text-zinc-100">Graph Topology</h2>
+                        <p class="text-sm text-zinc-400">Emergent connectivity structure of the learned neuron circuit
+                        </p>
+                    </div>
+                    <div class="analysis-body bg-zinc-950 rounded-xl border border-zinc-800 p-4 min-h-[400px]"
+                        id="topology-body"></div>
+                </div>
+            </div>
+
+            <!-- ── Tab 4: Hebbian Learning Action ── -->
+            <div class="tab-panel w-full" id="panel-hebbian">
+                <div class="rounded-xl bg-zinc-900/60 border border-white/5 p-3 shadow-2xl shadow-black/40">
+                    <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-lg font-semibold text-zinc-100">Hebbian Learning — "Fire Together, Wire Together"</h2>
+                            <p class="text-xs text-zinc-400">3D synapse reinforcement across 30 boards — watch memory pathways emerge</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <select id="hebbian-neurons" class="bg-zinc-950 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-zinc-200">
+                                <option value="1000" selected>1000 nodes</option>
+                                <option value="5000">5000 nodes</option>
+                            </select>
+                            <button id="hebbian-generate" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-amber-600 hover:bg-amber-500 text-white transition-colors">Generate</button>
+                        </div>
+                    </div>
+                    <div id="hebbian-body" class="hb-body-root"></div>
+                </div>
+            </div>
+
+            <!-- ── Tab 5: 3D Walkthrough ── -->
+            <div class="tab-panel w-full" id="panel-three">
+                <div class="rounded-xl bg-zinc-900 border border-white/5 p-0 shadow-2xl shadow-black/40 relative overflow-hidden">
+                    <div class="absolute top-4 left-5 z-20 flex items-center gap-4">
+                        <h2 class="text-sm font-semibold text-zinc-200 drop-shadow-lg">3D Neural Walkthrough</h2>
+                        <div class="flex items-center gap-2">
+                            <button id="three-rotate-toggle" class="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md bg-zinc-950/80 border border-zinc-700 text-zinc-300 hover:text-white hover:border-indigo-500 transition-colors backdrop-blur-sm cursor-pointer">Auto-Rotate: ON</button>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-4 left-5 z-20 flex items-center gap-3 text-[10px] font-medium text-zinc-400 bg-zinc-950/60 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/5">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-zinc-600"></span>Inactive</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-indigo-500"></span>Low</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-sky-500"></span>Medium</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span>High</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-white shadow-[0_0_6px_white]"></span>Peak</span>
+                    </div>
+                    <div id="three-container" class="w-full" style="height: max(75vh, 620px);"></div>
+                </div>
+            </div>
+
+            <!-- ── Tab 6: Memory Formation ── -->
+            <div class="tab-panel w-full" id="panel-memory">
+                <div class="rounded-xl bg-zinc-900 border border-white/5 p-6 shadow-2xl shadow-black/40 mb-6">
+                    <div class="mb-6">
+                        <h2 class="text-lg font-semibold text-zinc-100">Memory Formation Charts</h2>
+                        <p class="text-sm text-zinc-400">Cumulative Hebbian synapse strength and co-activation</p>
+                    </div>
+                    <div class="analysis-body bg-zinc-950 rounded-xl border border-zinc-800 p-4 min-h-[300px]"
+                        id="memory-body"></div>
+                </div>
+
+                <!-- Theory Box -->
+                <div
+                    class="rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-950 border-l-2 border-indigo-500 border-y border-r border-y-white/5 border-r-white/5 p-6 shadow-2xl shadow-black/40 relative overflow-hidden group">
+                    <div
+                        class="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 transition-all duration-1000 group-hover:bg-indigo-500/10 group-hover:scale-110">
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex items-start gap-4 mb-4">
+                            <div
+                                class="p-2.5 bg-indigo-500/10 rounded-lg text-indigo-400 border border-indigo-500/20 shadow-inner">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-semibold text-zinc-100">Hebbian Memory Formation</h2>
+                                <p class="text-sm text-zinc-400 mt-1">Understanding the gating mechanism and synapse
+                                    updates across layers.</p>
+                            </div>
+                        </div>
+                        <div class="text-sm text-zinc-300 leading-relaxed space-y-4">
+                            <p>The Neural Pathfinding Engine operates by treating the grid as a graph where functional
+                                connectivity emerges through training. The memory component <code
+                                    class="text-indigo-300 bg-indigo-500/10 px-1 rounded mx-0.5">y</code> forms a trace
+                                of active transitions.</p>
+                            <div
+                                class="my-6 p-5 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center font-mono text-indigo-300 shadow-inner overflow-x-auto hover:border-indigo-500/30 transition-colors">
+                                $$ G_x = E \otimes D_x \quad \text{where} \quad x = \text{ReLU}(v^* \cdot D_x) $$
+                            </div>
+                            <p>As the signal propagates from Start to End, Hebbian update rules strengthen the
+                                connections along the shortest path. The memory trace <code
+                                    class="text-indigo-300 bg-indigo-500/10 px-1 rounded mx-0.5">y</code> is updated as:
+                            </p>
+                            <div
+                                class="my-6 p-5 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center font-mono text-emerald-300 shadow-inner overflow-x-auto hover:border-emerald-500/30 transition-colors">
+                                $$ y^{(l+1)} = \alpha y^{(l)} + \eta (y^{(l)} \cdot W^T) \odot x^{(l)} $$
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── Tab 7: O(1) Inference Cycle ── -->
+            <div class="tab-panel w-full" id="panel-inference">
+                <div class="rounded-xl bg-zinc-900/60 border border-white/5 p-4 shadow-2xl shadow-black/40">
+                    <div class="mb-3">
+                        <h2 class="text-lg font-semibold text-zinc-100">BDH Architecture — Exhaustive Visual Explainer</h2>
+                        <p class="text-xs text-zinc-400">End-to-end training pipeline with exact hyperparameters — click Attention Core for recurrent inference mode</p>
+                    </div>
+                    <div id="inference-body"></div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- ═══ Right Sidebar: Telemetry & Live Graphs (Stacked Bento Box) ═══ -->
+        <aside class="lg:col-span-3 flex flex-col gap-6">
+
+            <!-- Interactive Pathfinding Grid Canvas (Moved to Sidebar) -->
+            <div
+                class="rounded-xl bg-zinc-900 border border-white/5 p-5 shadow-2xl shadow-black/40 flex flex-col items-center w-full">
+                <div class="w-full flex justify-between items-center mb-4">
+                    <h3 class="text-xs font-bold uppercase tracking-[0.15em] text-zinc-500">Live Grid Visualization</h3>
+                </div>
+                <div class="flex flex-wrap gap-3 text-[10px] font-medium text-zinc-400 mb-4 justify-center">
+                    <span class="flex items-center gap-1">
+                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Start
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <div class="w-1.5 h-1.5 rounded-full bg-rose-500"></div> End
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <div class="w-1.5 h-1.5 rounded-full bg-amber-500"></div> Path
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <div class="w-1.5 h-1.5 rounded-sm bg-slate-800 border border-slate-700"></div> Wall
+                    </span>
+                </div>
+                <!-- D3 Board Container -->
+                <div
+                    class="p-3 bg-zinc-950 rounded-xl border border-zinc-800 shadow-inner w-full flex items-center justify-center">
+                    <div id="board-container" class="w-full max-w-[280px] aspect-square">
+                        <!-- SVG injected by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bento Box 1: Topology Stats Placeholder -->
+            <div
+                class="rounded-xl bg-zinc-900 border border-white/5 p-5 shadow-xl shadow-black/40 hover:-translate-y-0.5 transition-transform duration-300">
+                <div class="flex items-center gap-2 mb-4 text-zinc-400">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                    </svg>
+                    <h3 class="text-xs font-bold uppercase tracking-[0.15em] text-zinc-500">Live Telemetry</h3>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <div
+                        class="bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 rounded-lg p-3 flex flex-col items-center justify-center shadow-inner">
+                        <span class="text-[10px] uppercase font-bold tracking-[0.1em] mb-1 opacity-70">Model
+                            Width</span>
+                        <span class="text-2xl font-bold text-center">96</span>
+                    </div>
+                    <div
+                        class="bg-teal-500/10 text-teal-300 border border-teal-500/20 rounded-lg p-3 flex flex-col items-center justify-center shadow-inner">
+                        <span class="text-[10px] uppercase font-bold tracking-[0.1em] mb-1 opacity-70">Heads</span>
+                        <span class="text-2xl font-bold">4</span>
+                    </div>
+                </div>
+
+                <div
+                    class="flex items-center justify-center text-zinc-500 text-xs border border-white/5 rounded-lg p-3 bg-zinc-950">
+                    View 'Sparse Brain' or 'Topology' tabs for deep analysis.
+                </div>
+            </div>
+
+            <!-- Bento Box 2: Layer Activations Placeholder -->
+            <div
+                class="rounded-xl bg-zinc-900 border border-white/5 p-5 shadow-xl shadow-black/40 flex-1 flex flex-col hover:-translate-y-0.5 transition-transform duration-300">
+                <div class="flex items-center gap-2 mb-4 text-zinc-400">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    <h3 class="text-xs font-bold uppercase tracking-[0.15em] text-zinc-500">Legend</h3>
+                </div>
+
+                <!-- Graph Legend inside Bento -->
+                <div class="flex flex-col gap-3">
+                    <div class="flex items-center gap-3 text-sm text-zinc-400">
+                        <div class="w-3 h-3 rounded-full bg-slate-100 shadow-[0_0_8px_rgba(255,255,255,0.8)]">
+                        </div>
+                        Star Core (Activation $x$)
+                    </div>
+                    <div class="flex items-center gap-3 text-sm text-zinc-400">
+                        <div
+                            class="w-4 h-4 rounded-full bg-blue-400/10 border border-blue-400/30 flex items-center justify-center">
+                            <div class="w-1.5 h-1.5 rounded-full bg-blue-200 shadow-[0_0_8px_rgba(160,190,255,0.9)]">
+                            </div>
+                        </div>
+                        Nebula Aura ($\Delta$ State)
+                    </div>
+                    <div class="flex items-center gap-3 text-sm text-zinc-400">
+                        <div class="w-6 h-px bg-blue-100 shadow-[0_0_8px_rgba(200,230,255,0.7)]"></div>
+                        Constellation Beam (Signal Flow)
+                    </div>
+                </div>
+
+                <div class="mt-auto p-4 bg-zinc-950 rounded border border-zinc-800 shadow-inner">
+                    <p class="text-xs text-zinc-500 font-mono">
+                        <kbd class="px-1 py-0.5 bg-zinc-800 rounded text-zinc-300 mr-1">&larr;</kbd> <kbd
+                            class="px-1 py-0.5 bg-zinc-800 rounded text-zinc-300 mr-1">&rarr;</kbd> Step through
+                        frames<br><br>
+                        <kbd class="px-1 py-0.5 bg-zinc-800 rounded text-zinc-300 mr-1">Space</kbd> Play / Pause<br><br>
+                        Drag nodes to rearrange
+                    </p>
+                </div>
+            </div>
+
+        </aside>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/main.js?v=20260225b"></script>
+</body>
+
+</html>
