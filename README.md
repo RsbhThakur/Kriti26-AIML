@@ -2,9 +2,9 @@
 
 Animation-first visual analytics for Brain-Derived Heuristics (BDH).
 
-Repository: `https://github.com/RsbhThakur/Kriti26-AIML`
-Live Demo: `https://<your-username>.github.io/<repo>/setup.html`
-Youtube Demo: `https://youtu.be/-gRUDOUw85g?si=UiLSYuq1dQY-pfPJ`
+Repository: `https://github.com/RsbhThakur/Kriti26-AIML`  
+Live Demo: `https://<your-username>.github.io/<repo>/setup.html`  
+Youtube Demo: `https://youtu.be/-gRUDOUw85g?si=UiLSYuq1dQY-pfPJ`  
 
 ---
 
